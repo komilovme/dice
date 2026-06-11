@@ -1,0 +1,27 @@
+# Core
+aiogram>=3.13.0
+
+# Database
+SQLAlchemy[asyncio]>=2.0.35
+alembic>=1.13.3
+asyncpg>=0.29.0
+
+# Cache / FSM storage / rate-limiting
+redis>=5.1.0
+
+# Config / validation
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# Scheduling
+APScheduler>=3.10.4
+
+# Performance / serialization
+orjson>=3.10.7
+uvloop>=0.20.0; sys_platform != "win32"
+
+# Logging
+structlog>=24.4.0
+
+# Resilience
+tenacity>=9.0.0

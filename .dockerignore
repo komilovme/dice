@@ -1,0 +1,43 @@
+# Version control
+.git
+.gitignore
+
+# Python caches / build artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local env & secrets
+.env
+.env.*
+!.env.example
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Local data / logs
+data/
+pgdata/
+redisdata/
+*.log
+*.db
+*.sqlite3
+
+# Docs source not needed in image
+docs/
+
+# OS
+.DS_Store
+Thumbs.db

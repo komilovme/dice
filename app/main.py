@@ -89,14 +89,23 @@ async def run_webhook() -> None:
     dp = create_dispatcher()
     await on_startup(bot, dp)
 
+    webhook_base = settings.effective_webhook_url
     await bot.set_webhook(
-        url=f"{settings.webhook_url}{settings.webhook_path}",
+        url=f"{webhook_base}{settings.webhook_path}",
         secret_token=settings.webhook_secret,
         drop_pending_updates=True,
         allowed_updates=dp.resolve_used_update_types(),
     )
 
     app = web.Application()
+
+    # Lightweight health endpoints for platform health checks (Railway/Render).
+    async def health(_request: web.Request) -> web.Response:
+        return web.json_response({"status": "ok"})
+
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+
     SimpleRequestHandler(dispatcher=dp, bot=bot, secret_token=settings.webhook_secret).register(
         app, path=settings.webhook_path
     )
@@ -104,9 +113,10 @@ async def run_webhook() -> None:
 
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, host=settings.webapp_host, port=settings.webapp_port)
+    port = settings.effective_port
+    site = web.TCPSite(runner, host=settings.webapp_host, port=port)
     await site.start()
-    logger.info("webhook.serving", host=settings.webapp_host, port=settings.webapp_port)
+    logger.info("webhook.serving", host=settings.webapp_host, port=port, url=webhook_base)
 
     try:
         await asyncio.Event().wait()  # serve forever

@@ -170,3 +170,61 @@ You can also run migrations as a one-off: `docker compose run --rm bot migrate`.
 - Postgres and Redis containers have health checks; `bot` waits for both.
 - Add an uptime monitor that sends `/start` to a canary chat, or watch the
   `startup.complete` log line.
+
+
+## 10. Deploy to Railway (railway.com)
+
+Railway runs the bundled `Dockerfile` and injects connection details, so the
+deploy is essentially turnkey — you only provide `BOT_TOKEN` and `ADMIN_IDS`.
+
+### Steps
+
+1. **Create the project & services**
+   - In Railway: **New Project → Deploy from GitHub repo** and pick `komilovme/dice`.
+   - In the same project click **New → Database → Add PostgreSQL**.
+   - Click **New → Database → Add Redis**.
+
+2. **Set the bot service variables** (bot service → **Variables**):
+
+   | Variable | Value |
+   |----------|-------|
+   | `BOT_TOKEN` | your token from @BotFather |
+   | `ADMIN_IDS` | your Telegram id (comma-separated for several) |
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference variable) |
+   | `REDIS_URL` | `${{Redis.REDIS_URL}}` (reference variable) |
+
+   > Type the `${{ ... }}` reference exactly — Railway resolves it to the live
+   > connection string of the linked service. Use the actual service names if
+   > you renamed them (e.g. `${{Postgres.DATABASE_URL}}`).
+
+3. **Generate a domain** (bot service → **Settings → Networking → Generate Domain**).
+   Railway then sets `RAILWAY_PUBLIC_DOMAIN` and `PORT` automatically, and the
+   bot starts in **webhook mode** using that domain — no extra config needed.
+
+4. **Deploy.** On boot the container waits for Postgres/Redis, runs
+   `alembic upgrade head`, then starts serving. Watch the deploy logs for
+   `startup.complete` and `webhook.serving`.
+
+### How it auto-configures
+
+The app reads the platform variables and wires everything itself:
+
+- `DATABASE_URL` → normalised to `postgresql+asyncpg://…` at runtime and
+  `postgresql+psycopg2://…` for migrations (libpq-only `sslmode` is stripped for
+  asyncpg automatically).
+- `REDIS_URL` → used directly for cache, FSM storage, rate limiting.
+- `PORT` → the web server binds to it.
+- `RAILWAY_PUBLIC_DOMAIN` → becomes the webhook URL (`https://<domain>/webhook`).
+- `/health` endpoint answers Railway's health checks (see `railway.json`).
+
+### Want long-polling instead of webhooks?
+
+Set `FORCE_POLLING=true` in the bot service variables. You can then skip the
+domain step; the bot will long-poll. (Webhook mode is recommended on Railway.)
+
+### Notes
+
+- Keep `numReplicas=1` (in `railway.json`) unless you split the scheduler out —
+  the in-process scheduler must run on exactly one instance.
+- `WEBHOOK_SECRET` defaults to a placeholder; set a strong random value in the
+  service variables for production.

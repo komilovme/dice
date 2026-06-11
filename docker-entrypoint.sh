@@ -23,8 +23,31 @@ run_migrations() {
     echo "Migrations applied."
 }
 
-wait_for "${POSTGRES_HOST:-postgres}" "${POSTGRES_PORT:-5432}" "PostgreSQL"
-wait_for "${REDIS_HOST:-redis}" "${REDIS_PORT:-6379}" "Redis"
+# Derive host/port for readiness checks from DATABASE_URL / REDIS_URL when
+# present (Railway/Render style), else fall back to the discrete env vars.
+pg_hostport=$(python - <<'PY'
+import os
+from urllib.parse import urlsplit
+u = urlsplit(os.getenv("DATABASE_URL") or "")
+print(u.hostname or os.getenv("POSTGRES_HOST", "postgres"),
+      u.port or os.getenv("POSTGRES_PORT", "5432"))
+PY
+)
+redis_hostport=$(python - <<'PY'
+import os
+from urllib.parse import urlsplit
+u = urlsplit(os.getenv("REDIS_URL") or "")
+print(u.hostname or os.getenv("REDIS_HOST", "redis"),
+      u.port or os.getenv("REDIS_PORT", "6379"))
+PY
+)
+PG_HOST=$(echo "$pg_hostport" | cut -d' ' -f1)
+PG_PORT=$(echo "$pg_hostport" | cut -d' ' -f2)
+RD_HOST=$(echo "$redis_hostport" | cut -d' ' -f1)
+RD_PORT=$(echo "$redis_hostport" | cut -d' ' -f2)
+
+wait_for "${PG_HOST}" "${PG_PORT}" "PostgreSQL"
+wait_for "${RD_HOST}" "${RD_PORT}" "Redis"
 
 case "${1:-bot}" in
     bot)

@@ -73,8 +73,8 @@ See [`docs/ERD.md`](docs/ERD.md) for the full data model.
 ## 🚀 Quick start (Docker)
 
 ```bash
-git clone <your-repo-url> dice-game-bot
-cd dice-game-bot
+git clone https://github.com/komilovme/dice.git
+cd dice
 cp .env.example .env
 # Edit .env: set BOT_TOKEN (from @BotFather) and ADMIN_IDS, change passwords.
 

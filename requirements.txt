@@ -5,6 +5,8 @@ aiogram>=3.13.0
 SQLAlchemy[asyncio]>=2.0.35
 alembic>=1.13.3
 asyncpg>=0.29.0
+# Sync driver used by Alembic migrations (env.py uses postgresql+psycopg2).
+psycopg2-binary>=2.9.9
 
 # Cache / FSM storage / rate-limiting
 redis>=5.1.0

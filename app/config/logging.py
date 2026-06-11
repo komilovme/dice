@@ -23,7 +23,6 @@ def configure_logging() -> None:
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
         timestamper,
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
@@ -57,5 +56,11 @@ def configure_logging() -> None:
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
-    """Return a bound structlog logger."""
-    return structlog.get_logger(name)
+    """Return a bound structlog logger.
+
+    The logger name is bound into the event dict as ``logger`` rather than via
+    ``structlog.stdlib.add_logger_name`` (which requires a stdlib logger with a
+    ``.name`` attribute and is incompatible with ``PrintLoggerFactory``).
+    """
+    logger = structlog.get_logger()
+    return logger.bind(logger=name) if name else logger
